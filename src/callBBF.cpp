@@ -4,7 +4,8 @@ The critical parameters for this script are
     Maximum bases is 2000 (parameter name is "maxD")
     Maximum residues is 10000 (parameter name is "maxP")
 
-The script generates a file "estimate.rec" in which we have the prediction for a sequence under testing using one trained cross-validation model
+The script returns the prediction for a sequence under testing using one trained cross-validation model
+** Modified by Shyam Saladi (saladi@caltech.edu, California Institute of Technology), 01-09-15
 
 */
 
@@ -79,7 +80,6 @@ int Blosum62[20][20]={
 
 void model(string filename)
 {
-
 	string str, tmp, tmp2;
 	stringstream *convert;
 	vector<string> filedata;
@@ -242,12 +242,12 @@ void align(int i,int j)//i for query sequence index and j for database sequence 
 
 
 
-void detect()
+void detect(vector<double> & estimate)
 {
 	
 	double y, fOrder, fDisor, pOrder, pDisor;
 
-	string estimate_filename = "estimate.rec";
+	//string estimate_filename = "estimate.rec";
 	
 	for(int i = 0; i < query.length(); i++) 
 	{
@@ -309,89 +309,61 @@ void detect()
 	
 	*/
 		
-	ofstream fp(estimate_filename.c_str());
-	
-	if (fp.is_open())
+
+	for(int i = 0; i < query.length(); i++)
 	{
-		for(int i = 0; i < query.length(); i++)
+		y=0.0;
+		
+		for(int r = 0; r < predictTimes[i]; r++)
 		{
-			y=0.0;
+			map<int, int> tmp_vals;
+			tmp_vals[i] = r;
 			
-			for(int r = 0; r < predictTimes[i]; r++)
-			{
-				map<int, int> tmp_vals;
-				tmp_vals[i] = r;
-				
-				//y+=yBar[i][r];
-				
-				y += yBar[tmp_vals];
-				
-			}
+			//y+=yBar[i][r];
 			
-			//fprintf(fp,"%c\t%f\n",query[i],y/(double)predictTimes[i]);
-			fp << query[i] << "\t" << y/(double)predictTimes[i] << "\n";
+			y += yBar[tmp_vals];
+			
 		}
 		
-		fp.close();
-	}
-	
-	else
-	{
-		cout << "Can't create estimate.rec!" << endl;
+		//fprintf(fp,"%c\t%f\n",query[i],y/(double)predictTimes[i]);
+		estimate.push_back((double)y/(double)predictTimes[i]);
 	}
 
 }
 
 
 
-int callBBF_driver(string seq_fn, string mod_fn, string pdf_fn1, double d_weight)
+int callBBF_driver(string myquery, string mod_fn, string pdf_fn1, double d_weight, vector<double> & scores)
 {
 
 	int i;
 	
 	disorder_weight = d_weight;
-	
-	ifstream fp(seq_fn.c_str());
-	
-	if (fp.is_open())
-	{
-		getline(fp, query);
-		
-		fp.close();
-		
-	}
-	else
-	{
-		cout << "Can't open " << seq_fn << endl;
-		return -1;
-	}
-	
+	query = myquery;
+
 	for(i = 0; i < query.size(); i++)
 	{
 		seqAA.push_back(INDEX[(int)(query[i]-'A')]);
-	  
 		if(seqAA[i]<0 || seqAA[i]>19) 
 		{ 
 			printf("seqAA[%d]=%d\n",i,seqAA[i]); 
 			return(1); 
 		}
 	}
-	  
+	
 	model(mod_fn);
-	printf("Model Worked\n");
-	fflush(stdout);
+	//printf("Model Worked\n");
+	//fflush(stdout);
 	
 	
 	pdf(pdf_fn1);
-	printf("PDF Worked\n");
-	fflush(stdout);
+	//printf("PDF Worked\n");
+	//fflush(stdout);
 	
-	
-	detect();
-	printf("Detect Worked\n");
-	fflush(stdout);
-	
-	
+	detect(scores);
+	//printf("Detect Worked\n");
+	//fflush(stdout);
+		
 	dbAA.clear();
 	Length.clear();
 	predictTimes.clear();
