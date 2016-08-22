@@ -8,7 +8,7 @@
 #include <sstream>
 #include <vector>
 #include <map>
-#include <omp.h>
+//#include <omp.h>
 
 using namespace std;
 
