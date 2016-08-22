@@ -5,20 +5,15 @@ The critical parameters for this script are
     Maximum residues is 10000 (parameter name is "maxP")
 
 The script returns the prediction for a sequence under testing using one trained cross-validation model
-** Modified by Shyam Saladi (saladi@caltech.edu, California Institute of Technology), 01-09-15
+** Modified by Shyam Saladi (saladi@caltech.edu, California Institute of Technology)
 
 */
-
-
 #include "callBBF.h"
-
 using namespace std;
 
 string query;
 vector<double> w;
-double		mu[2];
-double		sigma[2];
-double		disorder_weight;
+double		mu[2], sigma[2], disorder_weight;
 
 map < map <int, int>, double > yBar;
 
@@ -27,12 +22,10 @@ vector<short> seqAA;
 vector<int>	Length;
 vector<int> predictTimes;
 
-int		nD;//number of database sequences
-int		nW;
-int		rho0;
-int		rho1;
+int		nD; //number of database sequences
+int		nW, rho0, rho1;
 //FILE		*fp;
-//                         A b C D E F G H I j K L M  N  o P  Q  R  S  T  u V  W  x Y
+//                 A b C D E F G H I j K L M  N  o P  Q  R  S  T  u V  W  x Y
 int		INDEX[25]={0,0,1,2,3,4,5,6,7,0,8,9,10,11,0,12,13,14,15,16,0,17,18,0,19};
 int		Dayhoff[20][20]={
 { 40, 24, 32, 32, 16, 36, 28, 28, 28, 24, 28, 32, 36, 32, 24, 36, 36, 32,  8, 20},
@@ -83,9 +76,8 @@ void model(string filename)
 	string str, tmp, tmp2;
 	stringstream *convert;
 	vector<string> filedata;
-	
+
 	ifstream fp(filename.c_str());
-	
 	if (fp.is_open())
 	{
 		while (fp.good())
@@ -93,29 +85,27 @@ void model(string filename)
 			getline (fp, tmp);
 			filedata.push_back(tmp);
 		}
-		
 		fp.close();
 	}
-	
 	else
 	{
 		cout << "No model found." << endl;
 	}
-	
+
 	//first deal with headers
 	//the first two lines in vector give database size (nD) and window length (nW)
-	
+
 	convert = new stringstream(filedata[0]);
 	(*convert) >> nD;
-	
+
 	convert = new stringstream(filedata[1]);
 	(*convert) >> nW;
-	
+
 	vector<string> seqdata;
 	//j for database sequence index
 
-	for(int j=2; j<(nD*2)+2; j++)
-	{	
+	for(int j = 2; j < (nD*2)+2; j++)
+	{
 		if (j % 2 == 0)
 		{
 			seqdata.push_back(filedata[j]);
@@ -128,45 +118,35 @@ void model(string filename)
 			w.push_back(wtmp);
 		}
 	}
-	
+
 	filedata.clear();
-	
+
 	for (int j = 0; j < nD; j++)
 	{
 		str = seqdata[j];
 		Length.push_back(str.length());
-		
-		dbAA.push_back(vector<short>());
-	
-		for (int r = 0; r < str.length(); r++)
-		{
-			dbAA[j].push_back(INDEX[(int)(str[r] - 'A')]);
-			
-		}
 
-		
+		dbAA.push_back(vector<short>());
+
+		for (int r = 0; r < str.length(); r++)
+			dbAA[j].push_back(INDEX[(int)(str[r] - 'A')]);
 	}
-	
+
 	delete convert;
-	
+
 	 // Length[j]=str.length();
-	  
+
 	  //for(int r=0;r<strlen(str);r++)
 	//	dbAA[j][r]=INDEX[(int)(str[r]-'A')];
-		
-
-	
 }
 
 void pdf(string filename)
 {
-
 	string tmp;
 	vector<string> filedata;
 	stringstream *convert;
-	
+
 	ifstream fp(filename.c_str());
-	
 	if (fp.is_open())
 	{
 		while (fp.good())
@@ -174,33 +154,27 @@ void pdf(string filename)
 			getline (fp, tmp);
 			filedata.push_back(tmp);
 		}
-		
 		fp.close();
 	}
-	
 	else
 	{
 		cout << "No PDF record!" << endl;
 	}
 
-	
-	
 	//deal with the four lines sequentially
-	
 	convert = new stringstream(filedata[0]);
 	(*convert) >> mu[0];
-	
+
 	convert = new stringstream(filedata[1]);
 	(*convert) >> mu[1];
-	
+
 	convert = new stringstream(filedata[2]);
 	(*convert) >> sigma[0];
-	
+
 	convert = new stringstream(filedata[3]);
 	(*convert) >> sigma[1];
 
 	//cout << mu[0] << " " << mu[1] << " " << sigma[0] << " " << sigma[1] << endl;
-
 	//int tmp2 = fscanf(fp,"%f %f %f %f",&mu[0],&mu[1],&sigma[0],&sigma[1]);
 
 	delete convert;
@@ -209,94 +183,76 @@ void pdf(string filename)
 
 void align(int i,int j)//i for query sequence index and j for database sequence index
 {
-	int r,w,R,score;
-	rho1=-1000000;
+	int r, w, R, score;
+	rho1 = -1000000;
 
-	
-	for(r=0; r<=Length[j]-nW; r++)//go though the database sequence for maximised alignment
+	//go though the database sequence for maximised alignment
+	for(r = 0; r <= Length[j]-nW; r++)
 	{
-	  
-	 
-	  score=0;
+		score = 0;
 
-	  for(w=0; w<nW; w++)//go through the query sequence for one alignment
-	  	score+=Blosum62[seqAA[i+w]][dbAA[j][r+w]];
-	  
-	  
-	  if(score>rho1)
-	  {
-	  	rho1=score; 
-	  	R=r; 
-	  }
-	  
+		//go through the query sequence for one alignment
+		for(w = 0; w < nW; w++)
+			score += Blosum62[seqAA[i+w]][dbAA[j][r+w]];
 
+		if(score > rho1)
+		{
+			rho1 = score;
+			R = r;
+		}
 	}
 
-	
-	
-	rho0=0;
-	for(w=0;w<nW;w++)
-		rho0+=Blosum62[dbAA[j][R+w]][dbAA[j][R+w]];	 
-	
+	rho0= 0;
+	for(w = 0; w < nW; w++)
+		rho0 += Blosum62[dbAA[j][R+w]][dbAA[j][R+w]];
 }
-
 
 
 void detect(vector<double> & estimate)
 {
-	
 	double y, fOrder, fDisor, pOrder, pDisor;
 
 	//string estimate_filename = "estimate.rec";
-	
-	for(int i = 0; i < query.length(); i++) 
+
+	for(int i = 0; i < query.length(); i++)
 	{
 		predictTimes.push_back(0);
 	}
-	
-	
+
 	for(int i = 0; i <= query.length()-nW; i++)
 	{
-		y=0.0;
-		
+		y = 0.0;
 		for(int j = 0; j<nD; j++)
 		{
-			
-			align(i,j);//search for the maximum alignment between ith peptide from the query and the jth database sequence
-	
-			y+=w[j]*exp((double)(rho1-rho0)/(double)rho0);
-			
+			align(i, j); //search for the maximum alignment between ith peptide from the query and the jth database sequence
+			y += w[j] * exp((double)(rho1-rho0)/(double)rho0);
 		}
-		
 
-			
-		fOrder=exp(-0.5*pow(y-mu[0],2.0)/sigma[0])/(sqrt(M_2_PI*sigma[0])); //$VR$: bug fixed by Ron in Feb07
-		fDisor=exp(-0.5*pow(y-mu[1],2.0)/sigma[1])/(sqrt(M_2_PI*sigma[1])); //$VR$: bug fixed by Ron in Feb07
+		fOrder = exp(-0.5*pow(y-mu[0],2.0)/sigma[0])/(sqrt(M_2_PI*sigma[0])); //$VR$: bug fixed by Ron in Feb07
+		fDisor = exp(-0.5*pow(y-mu[1],2.0)/sigma[1])/(sqrt(M_2_PI*sigma[1])); //$VR$: bug fixed by Ron in Feb07
 
 		//$VR$: old buggy version pre-Feb07
 		//fOrder=exp(-0.5*pow(y-mu[0],2.0)/sigma[0])/(sqrt(6.28)*sigma[0]);
 		//fDisor=exp(-0.5*pow(y-mu[1],2.0)/sigma[1])/(sqrt(6.28)*sigma[1]);
 
-
 		//pOrder=(1.0-disorder_weight)*fOrder/((1.0-disorder_weight)*fOrder+disorder_weight*fDisor);
-		pDisor=disorder_weight*fDisor/((1.0-disorder_weight)*fOrder+disorder_weight*fDisor);
+		pDisor = disorder_weight*fDisor/((1.0-disorder_weight)*fOrder+disorder_weight*fDisor);
 		//fprintf(fp,"%c\t%f\t%f\t%f\t%f\t%f\n",query[i],y,mu[0],mu[1],pOrder,pDisor);
-		
-		
-		for(int r=i;r<i+nW;r++)
+
+		for(int r = i; r < i+nW; r++)
 		{
 			map <int, int> r_predtimes;
 			r_predtimes[r] = predictTimes[r];
-			
+
 			yBar[r_predtimes] = pDisor;
 			//yBar[r][predictTimes[r]]=pDisor;
 			predictTimes[r]++;
 		}
 	}
-	
+
 	/*
 	fp=fopen("estimate.rec","w");
-	
+
 	for(i=0;i<strlen(query);i++)
 	{
 		y=0.0;
@@ -304,73 +260,64 @@ void detect(vector<double> & estimate)
 		y+=yBar[i][r];
 		fprintf(fp,"%c\t%f\n",query[i],y/(double)predictTimes[i]);
 	}
-	
 	fclose(fp);
-	
 	*/
-		
 
 	for(int i = 0; i < query.length(); i++)
 	{
-		y=0.0;
-		
+		y = 0.0;
+
 		for(int r = 0; r < predictTimes[i]; r++)
 		{
 			map<int, int> tmp_vals;
 			tmp_vals[i] = r;
-			
-			//y+=yBar[i][r];
-			
+
+			//y += yBar[i][r];
+
 			y += yBar[tmp_vals];
-			
 		}
-		
+
 		//fprintf(fp,"%c\t%f\n",query[i],y/(double)predictTimes[i]);
 		estimate.push_back((double)y/(double)predictTimes[i]);
 	}
-
 }
-
 
 
 int callBBF_driver(string myquery, string mod_fn, string pdf_fn1, double d_weight, vector<double> & scores)
 {
-
 	int i;
-	
+
 	disorder_weight = d_weight;
 	query = myquery;
 
 	for(i = 0; i < query.size(); i++)
 	{
 		seqAA.push_back(INDEX[(int)(query[i]-'A')]);
-		if(seqAA[i]<0 || seqAA[i]>19) 
-		{ 
-			printf("seqAA[%d]=%d\n",i,seqAA[i]); 
-			return(1); 
+		if(seqAA[i]<0 || seqAA[i]>19)
+		{
+			printf("seqAA[%d]=%d\n",i,seqAA[i]);
+			return(1);
 		}
 	}
-	
+
 	model(mod_fn);
 	//printf("Model Worked\n");
 	//fflush(stdout);
-	
-	
+
 	pdf(pdf_fn1);
 	//printf("PDF Worked\n");
 	//fflush(stdout);
-	
+
 	detect(scores);
 	//printf("Detect Worked\n");
 	//fflush(stdout);
-		
+
 	dbAA.clear();
 	Length.clear();
 	predictTimes.clear();
 	w.clear();
-	
-	return 0;
 
+	return 0;
 }
 
 /*
@@ -401,5 +348,3 @@ fflush(stdout);
 return(1);
 }
 */
-
-
