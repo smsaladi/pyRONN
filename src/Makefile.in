@@ -189,8 +189,8 @@ top_srcdir = @top_srcdir@
 
 #RONN application
 RONN_SOURCES = RONN.cpp callBBF.cpp
-RONN_CPPFLAGS = -I./include -O2 -fopenmp
-RONN_LDADD = -lm -lgomp
+RONN_CPPFLAGS = -I./include -O2 #-fopenmp
+RONN_LDADD = -lm #-lgomp
 all: all-am
 
 .SUFFIXES:
