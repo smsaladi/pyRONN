@@ -4,6 +4,7 @@ config.h
 config.log
 Makefile
 src/Makefile
+stamp-h1
 
 # Prerequisites
 *.d
