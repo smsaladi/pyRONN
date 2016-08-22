@@ -5,6 +5,7 @@ config.log
 Makefile
 src/Makefile
 stamp-h1
+src/RONN
 
 # Prerequisites
 *.d
