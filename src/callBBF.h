@@ -14,18 +14,23 @@ typedef struct RONNModelTag
 {
     double mu[2], sigma[2], disorder_weight;
     int nD, nW;
-    std::vector< std::vector<short> >	dbAA;
+    std::vector<double> w;
+    std::vector<int> Length;
+    std::vector< std::vector<short> > dbAA;
 } RONNModel;
 
-RONNModel read_model_file(std::string filename);
+void read_model_record(std::string filename, RONNModel *model);
 
-void read_pdf_file(std::string filename, RONNModel *model);
+void read_pdf_record(std::string filename, RONNModel *model);
 
-void align(int i, int j, int nW, int rho[], RONNModel *model);
+void align(std::vector<short> &seqAA, int i, int j, int rho[],
+           RONNModel *model);
 
-void detect(std::vector<double> & estimate, RONNModel *model);
+void detect(std::vector<short> &seqAA, std::vector<double> &estimate,
+            RONNModel *model);
 
-int callBBF_driver(std::string query, std::string mod_fn, std::string pdf_fn1,
-                   double d_weight, std::vector<double> & scores);
+int predict_seq(std::string query, RONNModel *model,
+				std::vector<double> &scores);
 
-int main(int argc, char **argv);
+RONNModel read_model_data(std::string mod_fn, std::string pdf_fn,
+						  double d_weight);
