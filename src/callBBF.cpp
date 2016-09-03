@@ -9,24 +9,15 @@ The script returns the prediction for a sequence under testing using one trained
 
 */
 #include "callBBF.h"
-using namespace std;
 
-string query;
-vector<double> w;
+std::string query;
+std::vector<double> w;
 
-map < map <int, int>, double > yBar;
+std::map < std::map <int, int>, double > yBar;
 
-// An store parameters for each model
-double mu[2], sigma[2], disorder_weight;
-
-vector< vector<short> >	dbAA;
-
-vector<short> seqAA;
-vector<int>	Length;
-vector<int> predictTimes;
-
-//nD: number of database sequences
-int	nD, nW;
+std::vector<short> seqAA;
+std::vector<int>	Length;
+std::vector<int> predictTimes;
 
 //               A b C D E F G H I j K L M  N  o P  Q  R  S  T  u V  W  x Y
 int	INDEX[25] = {0,0,1,2,3,4,5,6,7,0,8,9,10,11,0,12,13,14,15,16,0,17,18,0,19};
@@ -74,19 +65,20 @@ int Blosum62[20][20]={
 {-3,-2,-4,-3, 1,-2,-2,-3,-3,-2,-1,-4,-4,-2,-3,-3,-3,-3,11, 2},
 {-2,-2,-3,-2, 3,-3, 2,-1,-2,-1,-1,-2,-3,-1,-2,-2,-2,-1, 2, 7}};
 
-// static void read_models(string fn_prefix, int model_count) {
+// static void read_models(std::string fn_prefix, int model_count) {
 // 	for(int i=0; i < model_count; i++) {
 // 		model(fn_prefix)
 // 	}
 // }
 
-void model(string filename)
+RONNModel read_model_file(std::string filename)
 {
-	string str, tmp, tmp2;
-	stringstream *convert;
-	vector<string> filedata;
+	RONNModel model;
+	std::string str, tmp, tmp2;
+	std::stringstream *convert;
+	std::vector<std::string> filedata;
 
-	ifstream fp(filename.c_str());
+	std::ifstream fp(filename.c_str());
 	if (fp.is_open())
 	{
 		while (fp.good())
@@ -98,22 +90,22 @@ void model(string filename)
 	}
 	else
 	{
-		cout << "No model found." << endl;
+		std::cout << "No model found." << std::endl;
 	}
 
 	//first deal with headers
-	//the first two lines in vector give database size (nD) and window length (nW)
+	//the first two lines in std::vector give database size (nD) and window length (nW)
 
-	convert = new stringstream(filedata[0]);
-	(*convert) >> nD;
+	convert = new std::stringstream(filedata[0]);
+	(*convert) >> model.nD;
 
-	convert = new stringstream(filedata[1]);
-	(*convert) >> nW;
+	convert = new std::stringstream(filedata[1]);
+	(*convert) >> model.nW;
 
-	vector<string> seqdata;
+	std::vector<std::string> seqdata;
 	//j for database sequence index
 
-	for(int j = 2; j < (nD*2)+2; j++)
+	for(int j = 2; j < (model.nD*2)+2; j++)
 	{
 		if (j % 2 == 0)
 		{
@@ -121,7 +113,7 @@ void model(string filename)
 		}
 		else
 		{
-			convert = new stringstream(filedata[j]);
+			convert = new std::stringstream(filedata[j]);
 			double wtmp = 0.0;
 			(*convert) >> wtmp;
 			w.push_back(wtmp);
@@ -130,32 +122,28 @@ void model(string filename)
 
 	filedata.clear();
 
-	for (int j = 0; j < nD; j++)
+	for (int j = 0; j < model.nD; j++)
 	{
 		str = seqdata[j];
 		Length.push_back(str.length());
 
-		dbAA.push_back(vector<short>());
+		model.dbAA.push_back(std::vector<short>());
 
 		for (int r = 0; r < str.length(); r++)
-			dbAA[j].push_back(INDEX[(int)(str[r] - 'A')]);
+			model.dbAA[j].push_back(INDEX[(int)(str[r] - 'A')]);
 	}
 
 	delete convert;
-
-	 // Length[j]=str.length();
-
-	  //for(int r=0;r<strlen(str);r++)
-	//	mydbAA[j][r]=INDEX[(int)(str[r]-'A')];
+	return model;
 }
 
-void pdf(string filename)
+void read_pdf_file(std::string filename, RONNModel *model)
 {
-	string tmp;
-	vector<string> filedata;
-	stringstream *convert;
+	std::string tmp;
+	std::vector<std::string> filedata;
+	std::stringstream *convert;
 
-	ifstream fp(filename.c_str());
+	std::ifstream fp(filename.c_str());
 	if (fp.is_open())
 	{
 		while (fp.good())
@@ -167,30 +155,30 @@ void pdf(string filename)
 	}
 	else
 	{
-		cout << "No PDF record!" << endl;
+		std::cout << "No PDF record!" << std::endl;
 	}
 
 	//deal with the four lines sequentially
-	convert = new stringstream(filedata[0]);
-	(*convert) >> mu[0];
+	convert = new std::stringstream(filedata[0]);
+	(*convert) >> model->mu[0];
 
-	convert = new stringstream(filedata[1]);
-	(*convert) >> mu[1];
+	convert = new std::stringstream(filedata[1]);
+	(*convert) >> model->mu[1];
 
-	convert = new stringstream(filedata[2]);
-	(*convert) >> sigma[0];
+	convert = new std::stringstream(filedata[2]);
+	(*convert) >> model->sigma[0];
 
-	convert = new stringstream(filedata[3]);
-	(*convert) >> sigma[1];
+	convert = new std::stringstream(filedata[3]);
+	(*convert) >> model->sigma[1];
 
-	//cout << mu[0] << " " << mu[1] << " " << sigma[0] << " " << sigma[1] << endl;
+	//std::cout << mu[0] << " " << mu[1] << " " << sigma[0] << " " << sigma[1] << endl;
 	//int tmp2 = fscanf(fp,"%f %f %f %f",&mu[0],&mu[1],&sigma[0],&sigma[1]);
 
 	delete convert;
 }
 
 
-void align(int i, int j, int rho[])
+void align(int i, int j, int rho[], RONNModel *model)
 // i for query sequence index
 // j for database sequence index
 {
@@ -199,13 +187,13 @@ void align(int i, int j, int rho[])
 	rho[1] = -1000000;
 
 	//go though the database sequence for maximised alignment
-	for(int r = 0; r <= Length[j]-nW; r++)
+	for(int r = 0; r <= Length[j]-model->nW; r++)
 	{
 		score = 0;
 
 		//go through the query sequence for one alignment
-		for(int w = 0; w < nW; w++)
-			score += Blosum62[seqAA[i+w]][dbAA[j][r+w]];
+		for(int w = 0; w < model->nW; w++)
+			score += Blosum62[seqAA[i+w]][model->dbAA[j][r+w]];
 
 		if(score > rho[1])
 		{
@@ -214,14 +202,14 @@ void align(int i, int j, int rho[])
 		}
 	}
 
-	for(int w = 0; w < nW; w++)
-		rho[0] += Blosum62[dbAA[j][R+w]][dbAA[j][R+w]];
+	for(int w = 0; w < model->nW; w++)
+		rho[0] += Blosum62[model->dbAA[j][R+w]][model->dbAA[j][R+w]];
 
 	return;
 }
 
 
-void detect(vector<double> & estimate)
+void detect(std::vector<double> & estimate, RONNModel *model)
 {
 	double y, fOrder, fDisor, pOrder, pDisor;
 	int rho[2];
@@ -231,31 +219,31 @@ void detect(vector<double> & estimate)
 	for(int i = 0; i < query.length(); i++)
 		predictTimes.push_back(0);
 
-	for(int i = 0; i <= query.length()-nW; i++)
+	for(int i = 0; i <= query.length()-model->nW; i++)
 	{
 		y = 0.0;
-		for(int j = 0; j<nD; j++)
+		for(int j = 0; j<model->nD; j++)
 		{
 			// search for the maximum alignment between ith query peptide
 			// jth database sequence
-			align(i, j, rho);
+			align(i, j, rho, model);
 			y += w[j] * exp((double)(rho[1]-rho[0])/(double)rho[0]);
 		}
 
-		fOrder = exp(-0.5*pow(y-mu[0],2.0)/sigma[0])/(sqrt(M_2_PI*sigma[0])); //$VR$: bug fixed by Ron in Feb07
-		fDisor = exp(-0.5*pow(y-mu[1],2.0)/sigma[1])/(sqrt(M_2_PI*sigma[1])); //$VR$: bug fixed by Ron in Feb07
+		fOrder = exp(-0.5*pow(y-model->mu[0], 2.0)/model->sigma[0])/(sqrt(M_2_PI*model->sigma[0])); //$VR$: bug fixed by Ron in Feb07
+		fDisor = exp(-0.5*pow(y-model->mu[1], 2.0)/model->sigma[1])/(sqrt(M_2_PI*model->sigma[1])); //$VR$: bug fixed by Ron in Feb07
 
 		//$VR$: old buggy version pre-Feb07
 		//fOrder=exp(-0.5*pow(y-mu[0],2.0)/sigma[0])/(sqrt(6.28)*sigma[0]);
 		//fDisor=exp(-0.5*pow(y-mu[1],2.0)/sigma[1])/(sqrt(6.28)*sigma[1]);
 
 		//pOrder=(1.0-disorder_weight)*fOrder/((1.0-disorder_weight)*fOrder+disorder_weight*fDisor);
-		pDisor = disorder_weight*fDisor/((1.0-disorder_weight)*fOrder+disorder_weight*fDisor);
+		pDisor = model->disorder_weight*fDisor/((1.0-model->disorder_weight)*fOrder+model->disorder_weight*fDisor);
 		//fprintf(fp,"%c\t%f\t%f\t%f\t%f\t%f\n",query[i],y,mu[0],mu[1],pOrder,pDisor);
 
-		for(int r = i; r < i+nW; r++)
+		for(int r = i; r < i+model->nW; r++)
 		{
-			map <int, int> r_predtimes;
+			std::map <int, int> r_predtimes;
 			r_predtimes[r] = predictTimes[r];
 
 			yBar[r_predtimes] = pDisor;
@@ -283,7 +271,7 @@ void detect(vector<double> & estimate)
 
 		for(int r = 0; r < predictTimes[i]; r++)
 		{
-			map<int, int> tmp_vals;
+			std::map<int, int> tmp_vals;
 			tmp_vals[i] = r;
 
 			//y += yBar[i][r];
@@ -296,15 +284,12 @@ void detect(vector<double> & estimate)
 	}
 }
 
-
-int callBBF_driver(string myquery, string mod_fn, string pdf_fn1, double d_weight, vector<double> & scores)
+int callBBF_driver(std::string myquery, std::string mod_fn, std::string pdf_fn1,
+				   double d_weight, std::vector<double> & scores)
 {
-	int i;
-
-	disorder_weight = d_weight;
 	query = myquery;
 
-	for(i = 0; i < query.size(); i++)
+	for(int i = 0; i < query.size(); i++)
 	{
 		seqAA.push_back(INDEX[(int)(query[i]-'A')]);
 		if(seqAA[i]<0 || seqAA[i]>19)
@@ -314,22 +299,21 @@ int callBBF_driver(string myquery, string mod_fn, string pdf_fn1, double d_weigh
 		}
 	}
 
-	model(mod_fn);
-	//printf("Model Worked\n");
-	//fflush(stdout);
+	// printf("starting to read model\n");
+	RONNModel model = read_model_file(mod_fn);
+	model.disorder_weight = d_weight;
 
-	pdf(pdf_fn1);
-	//printf("PDF Worked\n");
-	//fflush(stdout);
+	// printf("starting to read pdf\n");
+	read_pdf_file(pdf_fn1, &model);
 
-	detect(scores);
-	//printf("Detect Worked\n");
-	//fflush(stdout);
+	// printf("starting detect\n");
+	detect(scores, &model);
 
-	dbAA.clear();
+	// printf("ending detect\n");
+	model.dbAA.clear();
 	Length.clear();
 	predictTimes.clear();
 	w.clear();
-
+	// printf("leaving callbbf\n");
 	return 0;
 }
