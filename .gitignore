@@ -1,5 +1,6 @@
 # Configure
 .deps
+config.status
 config.h
 config.log
 Makefile
