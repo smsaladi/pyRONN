@@ -16,7 +16,7 @@ void model(string filename);
 
 void pdf(string filename);
 
-void align(int i, int j);
+void align(int i, int j, int rho[]);
 
 void detect(vector<double> & estimate);
 
