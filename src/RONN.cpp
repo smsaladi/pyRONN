@@ -11,60 +11,59 @@
 **
 ==========================================================*/
 
+// Number of models to use
+#define MODCNT 10
 #include "callBBF.h"
-using namespace std;
 
 //@@@@@ the path can be changed
-string myPath="/ul/saladi/ronn/data";
+std::string myPath="/ul/saladi/ronn/data";
 
-int main(int argc,char **argv)
+// void predict_seq(char const *seq, float ronn[]) {
+//
+// }
+
+int main(int argc, char **argv)
 {
-	//number of models
-	int nM = 10;
-
-	stringstream *convert;
+	std::stringstream *convert;
 	FILE *fp;
 
 	//$VR$: VERY IMPORTANT. CONTROLS COST FUNCTION
-	double disorder_weight=0.53;
+	double disorder_weight = 0.53;
 
-	string fModel, fPDF;
+	std::string fModel, fPDF;
 	int r, m, nR;
 
 	double mean;
-	vector< vector<double> > X;
+	std::vector< std::vector<double> > X;
 
-	string query;
+	std::string query;
 
-	//$VR$: Debug output
-	//cout << "The cost coefficient or disorder weight is: " << disorder_weight << endl;
-
-	string line;
+	std::string line;
     // print the FASTA header
 	getline(std::cin, line);
-	cout << line;
-	cout << "\n";
+	std::cout << line;
+	std::cout << "\n";
 
 	// get the sequence
-    while (cin >> line)
+    while (std::cin >> line)
     {
         query = query + line;
     }
 	nR=query.size();
 
-	for(m = 0; m < nM; m++)
+	for(m = 0; m < MODCNT; m++)
 	{
 		//sprintf(fModel,"%s/c%d/model.rec",myPath,m);
-		convert = new stringstream();
+		convert = new std::stringstream();
 		(*convert) << m;
-		string mString = convert->str();
+		std::string mString = convert->str();
 
 		fModel = myPath + "/c" + mString + "/model.rec";
 
 	   	//TODO: get rid of FILE* stuff
 		if(!(fp = fopen(fModel.c_str(),"r")))
 		{
-			cout << "Can't find " << fModel << endl;
+			std::cout << "Can't find " << fModel << std::endl;
 			return -1;
 		}
 		fclose(fp);
@@ -75,20 +74,17 @@ int main(int argc,char **argv)
 		//TODO: get rid of FILE* stuff
 		if(!(fp = fopen(fPDF.c_str(),"r")))
 		{
-			cout << "Can't find " << fPDF << endl;
+			std::cout << "Can't find " << fPDF << std::endl;
 			return -1;
 		}
 		fclose(fp);
 
-        vector<double> scores;
+        std::vector<double> scores;
 		int retval = callBBF_driver(query, fModel, fPDF, disorder_weight, scores);
-
-		//if (retval == 0)
-		//  printf("................Completing testing ............! Model: %d\n", m);
 
         for(r = 0; r < nR; r++)
 		{
-			X.push_back(vector<double>());
+			X.push_back(std::vector<double>());
 			X[r].push_back(scores[r]);
 		}
 	}
@@ -96,9 +92,9 @@ int main(int argc,char **argv)
 	for(r = 0; r < nR; r++)
 	{
 		mean = 0;
-		for(m = 0; m < nM; m++)
+		for(m = 0; m < MODCNT; m++)
 			mean += X[r][m];
-		mean /= (double)nM;
+		mean /= (double)MODCNT;
 
 		printf("%c\t%f\n", query[r], mean);
 	}
