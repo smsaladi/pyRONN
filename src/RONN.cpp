@@ -18,6 +18,8 @@
 //@@@@@ the path can be changed
 std::string myPath="/ul/saladi/ronn/data";
 
+std::vector<RONNModel> models;
+
 // void predict_seq(char const *seq, float ronn[]) {
 //
 // }
@@ -49,8 +51,9 @@ int main(int argc, char **argv)
     {
         query = query + line;
     }
-	nR=query.size();
+	nR = query.size();
 
+    // Read all models
 	for(m = 0; m < MODCNT; m++)
 	{
 		//sprintf(fModel,"%s/c%d/model.rec",myPath,m);
@@ -79,8 +82,13 @@ int main(int argc, char **argv)
 		}
 		fclose(fp);
 
+        models.push_back(read_model_data(fModel, fPDF, disorder_weight));
+    }
+
+    for(m = 0; m < MODCNT; m++)
+    {
         std::vector<double> scores;
-		int retval = callBBF_driver(query, fModel, fPDF, disorder_weight, scores);
+        predict_seq(query, &models[m], scores);
 
         for(r = 0; r < nR; r++)
 		{
@@ -101,4 +109,9 @@ int main(int argc, char **argv)
 	delete convert;
 
 	return 0;
+}
+
+void read_all_models()
+{
+    return;
 }
