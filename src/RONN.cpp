@@ -78,20 +78,17 @@ int read_all_models(std::string prefix, float disorder_weight)
 }
 
 
-std::vector<double> predict_seq(std::string query)
+std::vector<double> predict_seq(std::string query, bool print_output)
 {
     std::vector<double> scores(query.length(), 0.0);
-    for(int m = 0; m < MODCNT; m++){
+    for(int m = 0; m < MODCNT; m++)
         predict_model(query, &models[m], scores);
 
-        // for(int i = 0; i < query.length(); i++)
-        //     printf("intermed\t%c\t%f\n", query[i], scores[i]);
-    }
-
-    for(int i = 0; i < query.length(); i++) {
-        scores[i] = scores[i]/(double)MODCNT;
-    }
-
+    for(int i = 0; i < query.length(); i++)
+        if(print_output)
+             printf("%c\t%f\n", query[i], scores[i]/(double)MODCNT);
+        else
+            scores[i] = scores[i]/(double)MODCNT;
 
     return scores;
 }
@@ -116,21 +113,18 @@ int main(int argc, char *argv[])
     if(status != 0)
         return(status);
 
-    // print the header for the FASTA-formatted file
-	getline(std::cin, line);
-	std::cout << line;
-	std::cout << "\n";
-
-	// get the sequence
-    while (std::cin >> line)
-        query = query + line;
-
-    // calculate scores
-    std::vector<double> scores = predict_seq(query);
-
-    //print results
-    for(int i = 0; i < scores.size(); i++)
-        printf("%c\t%f\n", query[i], scores[i]);
+    // read and predict sequences
+    while(std::getline(std::cin, line).good()){
+        if(line[0] == '>')
+        {
+            std::cout << line << std::endl;    // print header
+            if(query.length() > 1)
+                predict_seq(query, 1);      // predict and print scores
+        }
+        else
+            query = query + line;
+    }
+    predict_seq(query, 1); // final sequence
 
 	return 0;
 }

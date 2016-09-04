@@ -1,11 +1,25 @@
-/*
+/*=========================================================
+**
+** The code returns the prediction for a sequence under testing using one
+** trained cross-validation model.
+**
+** Date:	March 2012
+** Designer:	Zheng Rong Yang (Exeter University)
+** Programmer:	Varun Ramraj (University of Oxford)
+** Contact:	varun@strubi.ox.ac.uk
+**
+** Substantial modifications to speed up code as well as facilitate wrapping
+** with Python (or any other language). Can now also handle multiple
+** FASTA-formatted records in an input file. Path to `data` directory must be
+** specified as a command-line argument if not located at `../data` with respect
+** to the executable file.
+** Date:    Sept 2016
+** Author:  Shyam Saladi (California Institute of Technology)
+** Contact: saladi@caltech.edu
+**
+==========================================================*/
 
-The script returns the prediction for a sequence under testing using one trained cross-validation model
-** Modified by Shyam Saladi (saladi@caltech.edu, California Institute of Technology)
-
-*/
 #include "callBBF.h"
-
 
 void read_model_record(std::string filename, RONNModel *model)
 {
