@@ -12,7 +12,7 @@
 ** FASTA-formatted records in an input file. Path to `data` directory must be
 ** specified as a command-line argument if not located at `../data` with respect
 ** to the executable file.
-** Date:    Sept 2016
+** Date:    September 2016
 ** Author:  Shyam Saladi (California Institute of Technology)
 ** Contact: saladi@caltech.edu
 **
@@ -117,9 +117,10 @@ int main(int argc, char *argv[])
     while(std::getline(std::cin, line).good()){
         if(line[0] == '>')
         {
-            std::cout << line << std::endl;    // print header
-            if(query.length() > 1)
+            if(query.length() > 1)          // OK if not the first sequence
                 predict_seq(query, 1);      // predict and print scores
+            std::cout << line << std::endl; // print header
+            query = "";
         }
         else
             query = query + line;
