@@ -26,21 +26,16 @@ void read_pdf_record(std::string filename, RONNModel *model);
 void align(std::vector<short> &seqAA, int i, int j, int rho[],
            RONNModel *model);
 
-void detect(std::vector<short> &seqAA, std::vector<double> &estimate,
-            RONNModel *model);
-
-int predict_seq(std::string query, RONNModel *model,
-				std::vector<double> &scores);
+int predict_model(std::string query, RONNModel *model,
+				  std::vector<double> &scores);
 
 RONNModel read_model_data(std::string mod_fn, std::string pdf_fn,
 						  double d_weight);
 
-static
 //               A b C D E F G H I j K L M  N  o P  Q  R  S  T  u V  W  x Y
-int	INDEX[25] = {0,0,1,2,3,4,5,6,7,0,8,9,10,11,0,12,13,14,15,16,0,17,18,0,19};
+int	const INDEX[25] = {0,0,1,2,3,4,5,6,7,0,8,9,10,11,0,12,13,14,15,16,0,17,18,0,19};
 
-static
-int	Dayhoff[20][20] = {
+int	const Dayhoff[20][20] = {
 {40, 24, 32, 32, 16, 36, 28, 28, 28, 24, 28, 32, 36, 32, 24, 36, 36, 32,  8, 20},
 {24, 80, 12, 12, 16, 20, 20, 24, 12,  8, 12, 16, 20, 12, 16, 32, 24, 24,  0, 32},
 {32, 12, 48, 44,  8, 36, 36, 24, 32, 16, 20, 40, 28, 40, 28, 32, 32, 24,  4, 16},
@@ -62,8 +57,7 @@ int	Dayhoff[20][20] = {
 { 8,  0,  4,  4, 32,  4, 20, 12, 20, 24, 16, 16,  8, 12, 40, 24, 12,  8,100, 32},
 {20, 32, 16, 16, 60, 12, 32, 28, 16, 28, 24, 24, 12, 16, 16, 20, 20, 24, 32, 72}};
 
-static
-int Blosum62[20][20]={
+int const Blosum62[20][20]={
 { 4, 0,-2,-1,-2, 0,-2,-1,-1,-1,-1,-1,-1,-1,-1, 1,-1,-2,-3,-2},
 { 0, 9,-3,-4,-2,-3,-3,-1,-3,-1,-1,-3,-3,-3,-3,-1,-1,-1,-2,-2},
 {-2,-3, 6, 2,-3,-1,-1,-3,-1,-4,-3, 1,-1, 0,-2, 0, 1,-3,-4,-3},
