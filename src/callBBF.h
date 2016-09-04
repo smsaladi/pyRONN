@@ -12,7 +12,7 @@
 typedef struct RONNModelTag
 {
     double mu[2], sigma[2], disorder_weight;
-    int nD, nW;
+    int nD, nW;   // nD: database size; nW: window length
     std::vector<double> w;
     std::vector<int> Length;
     std::vector< std::vector<short> > dbAA;
