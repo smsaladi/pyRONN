@@ -1,9 +1,5 @@
 /*
 
-The critical parameters for this script are
-    Maximum bases is 2000 (parameter name is "maxD")
-    Maximum residues is 10000 (parameter name is "maxP")
-
 The script returns the prediction for a sequence under testing using one trained cross-validation model
 ** Modified by Shyam Saladi (saladi@caltech.edu, California Institute of Technology)
 
@@ -22,7 +18,7 @@ void read_model_record(std::string filename, RONNModel *model)
 	{
 		while (fp.good())
 		{
-			getline (fp, tmp);
+			getline(fp, tmp);
 			filedata.push_back(tmp);
 		}
 		fp.close();
@@ -35,7 +31,6 @@ void read_model_record(std::string filename, RONNModel *model)
 	//first deal with headers
 	//line 1: database size (nD)
 	//line 2: window length (nW)
-
 	convert = new std::stringstream(filedata[0]);
 	(*convert) >> model->nD;
 	convert = new std::stringstream(filedata[1]);
@@ -47,9 +42,7 @@ void read_model_record(std::string filename, RONNModel *model)
 	for(int j = 2; j < (model->nD*2)+2; j++)
 	{
 		if (j % 2 == 0)
-		{
 			seqdata.push_back(filedata[j]);
-		}
 		else
 		{
 			convert = new std::stringstream(filedata[j]);
@@ -64,7 +57,6 @@ void read_model_record(std::string filename, RONNModel *model)
 	{
 		str = seqdata[j];
 		model->Length.push_back(str.length());
-
 		model->dbAA.push_back(std::vector<short>());
 
 		for (int r = 0; r < str.length(); r++)
@@ -109,9 +101,6 @@ void read_pdf_record(std::string filename, RONNModel *model)
 	convert = new std::stringstream(filedata[3]);
 	(*convert) >> model->sigma[1];
 
-	//std::cout << mu[0] << " " << mu[1] << " " << sigma[0] << " " << sigma[1] << endl;
-	//int tmp2 = fscanf(fp,"%f %f %f %f",&mu[0],&mu[1],&sigma[0],&sigma[1]);
-
 	delete convert;
 }
 
@@ -147,21 +136,31 @@ void align(std::vector<short> &seqAA, int i, int j, int rho[], RONNModel *model)
 }
 
 
-void detect(std::vector<short> &seqAA, std::vector<double> &estimate,
-			RONNModel *model)
+int predict_model(std::string query, RONNModel *model,
+				  std::vector<double> &scores)
 {
-	double y, fOrder, fDisor, pOrder, pDisor;
-	std::vector<int> predictTimes;
+	int rho[2], seqlen = scores.size();
+	double y, fOrder, fDisor, pDisor;
+
+	// initialize arrays
+	std::vector<int> predictTimes(seqlen, 0);
+	std::vector<short> seqAA(seqlen, 0);
+
 	std::map < std::map <int, int>, double > yBar;
 
-	int rho[2];
+	//translate protein sequence to numbers
+	for(int i = 0; i < seqlen; i++)
+	{
+		seqAA[i] = INDEX[(int)(query[i]-'A')];
+		// check if valid character
+		if(seqAA[i]<0 || seqAA[i]>19)
+		{
+			printf("seqAA[%d]=%d\n", i, seqAA[i]);
+			return 1;
+		}
+	}
 
-	//string estimate_filename = "estimate.rec";
-
-	for(int i = 0; i < seqAA.size(); i++)
-		predictTimes.push_back(0);
-
-	for(int i = 0; i <= seqAA.size()-model->nW; i++)
+	for(int i = 0; i <= seqlen-model->nW; i++)
 	{
 		y = 0.0;
 		for(int j = 0; j < model->nD; j++)
@@ -187,7 +186,7 @@ void detect(std::vector<short> &seqAA, std::vector<double> &estimate,
 		}
 	}
 
-	for(int i = 0; i < seqAA.size(); i++)
+	for(int i = 0; i < seqlen; i++)
 	{
 		y = 0.0;
 		for(int r = 0; r < predictTimes[i]; r++)
@@ -196,10 +195,12 @@ void detect(std::vector<short> &seqAA, std::vector<double> &estimate,
 			tmp_vals[i] = r;
 			y += yBar[tmp_vals];
 		}
-		estimate.push_back((double)y/(double)predictTimes[i]);
+
+		// add score to running total
+		scores[i] += (double)y/(double)predictTimes[i];
 	}
 
-	predictTimes.clear();
+	return 0;
 }
 
 
@@ -211,28 +212,4 @@ RONNModel read_model_data(std::string mod_fn, std::string pdf_fn,
 	model.disorder_weight = d_weight;
 	read_pdf_record(pdf_fn, &model);
 	return model;
-}
-
-
-int predict_seq(std::string query, RONNModel *model,
-				std::vector<double> &scores)
-{
-	std::vector<short> seqAA;
-
-	for(int i = 0; i < query.size(); i++)
-	{
-		seqAA.push_back(INDEX[(int)(query[i]-'A')]);
-		// check if valid character
-		if(seqAA[i]<0 || seqAA[i]>19)
-		{
-			printf("seqAA[%d]=%d\n", i, seqAA[i]);
-			return(1);
-		}
-	}
-
-	// printf("starting detect\n");
-	detect(seqAA, scores, model);
-	// printf("ending detect\n");
-
-	return 0;
 }

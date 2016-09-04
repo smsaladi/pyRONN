@@ -7,111 +7,130 @@
 ** Programmer:	Varun Ramraj (University of Oxford)
 ** Contact:	varun@strubi.ox.ac.uk
 **
-** Modified by Shyam Saladi (saladi@caltech.edu, California Institute of Technology), 01-09-15
+** Substantial modifications to speed up code as well as facilitate wrapping
+** with Python (or any other language). Can now also handle multiple
+** FASTA-formatted records in an input file. Path to `data` directory must be
+** specified as a command-line argument if not located at `../data` with respect
+** to the executable file.
+** Date:    Sept 2016
+** Author:  Shyam Saladi (California Institute of Technology)
+** Contact: saladi@caltech.edu
 **
 ==========================================================*/
 
 // Number of models to use
 #define MODCNT 10
-#include "callBBF.h"
 
-//@@@@@ the path can be changed
-std::string myPath="/ul/saladi/ronn/data";
+#include <string>
+#include <limits.h>
+#include <unistd.h>
+
+#include "callBBF.h"
 
 std::vector<RONNModel> models;
 
-// void predict_seq(char const *seq, float ronn[]) {
-//
-// }
 
-int main(int argc, char **argv)
+std::string getexepath()
+// find current directory of executable on Linux
+// http://stackoverflow.com/a/19535628/2320823
 {
-	std::stringstream *convert;
-	FILE *fp;
+  char result[ PATH_MAX ];
+  ssize_t count = readlink( "/proc/self/exe", result, PATH_MAX );
+  return std::string( result, (count > 0) ? count : 0 );
+}
 
-	//$VR$: VERY IMPORTANT. CONTROLS COST FUNCTION
-	double disorder_weight = 0.53;
+int read_all_models(std::string prefix, float disorder_weight)
+/*****
+	disorder_weight: VERY IMPORTANT. CONTROLS COST FUNCTION
+*****/
+{
+    FILE *fp;
+    std::string fModel, fPDF;
+    std::stringstream *convert;
 
-	std::string fModel, fPDF;
-	int r, m, nR;
-
-	double mean;
-	std::vector< std::vector<double> > X;
-
-	std::string query;
-
-	std::string line;
-    // print the FASTA header
-	getline(std::cin, line);
-	std::cout << line;
-	std::cout << "\n";
-
-	// get the sequence
-    while (std::cin >> line)
-    {
-        query = query + line;
-    }
-	nR = query.size();
-
-    // Read all models
-	for(m = 0; m < MODCNT; m++)
+	for(int m = 0; m < MODCNT; m++)
 	{
-		//sprintf(fModel,"%s/c%d/model.rec",myPath,m);
 		convert = new std::stringstream();
 		(*convert) << m;
 		std::string mString = convert->str();
+		fModel = prefix + "/c" + mString + "/model.rec";
 
-		fModel = myPath + "/c" + mString + "/model.rec";
-
-	   	//TODO: get rid of FILE* stuff
-		if(!(fp = fopen(fModel.c_str(),"r")))
+		if(!(fp = fopen(fModel.c_str(), "r")))
 		{
-			std::cout << "Can't find " << fModel << std::endl;
+			std::cerr << "Can't find " << fModel << std::endl;
 			return -1;
 		}
 		fclose(fp);
 
-		//sprintf(fPDF,"%s/c%d/pdfs.rec",myPath,m);
-		fPDF = myPath + "/c" + mString + "/pdfs.rec";
-
-		//TODO: get rid of FILE* stuff
-		if(!(fp = fopen(fPDF.c_str(),"r")))
+		fPDF = prefix + "/c" + mString + "/pdfs.rec";
+		if(!(fp = fopen(fPDF.c_str(), "r")))
 		{
-			std::cout << "Can't find " << fPDF << std::endl;
+			std::cerr << "Can't find " << fPDF << std::endl;
 			return -1;
 		}
 		fclose(fp);
 
         models.push_back(read_model_data(fModel, fPDF, disorder_weight));
     }
+    delete convert;
 
-    for(m = 0; m < MODCNT; m++)
-    {
-        std::vector<double> scores;
-        predict_seq(query, &models[m], scores);
-
-        for(r = 0; r < nR; r++)
-		{
-			X.push_back(std::vector<double>());
-			X[r].push_back(scores[r]);
-		}
-	}
-
-	for(r = 0; r < nR; r++)
-	{
-		mean = 0;
-		for(m = 0; m < MODCNT; m++)
-			mean += X[r][m];
-		mean /= (double)MODCNT;
-
-		printf("%c\t%f\n", query[r], mean);
-	}
-	delete convert;
-
-	return 0;
+    return 0;
 }
 
-void read_all_models()
+
+std::vector<double> predict_seq(std::string query)
 {
-    return;
+    std::vector<double> scores(query.length(), 0.0);
+    for(int m = 0; m < MODCNT; m++){
+        predict_model(query, &models[m], scores);
+
+        // for(int i = 0; i < query.length(); i++)
+        //     printf("intermed\t%c\t%f\n", query[i], scores[i]);
+    }
+
+    for(int i = 0; i < query.length(); i++) {
+        scores[i] = scores[i]/(double)MODCNT;
+    }
+
+
+    return scores;
+}
+
+
+int main(int argc, char *argv[])
+{
+	std::string query, line, prefix;
+
+    if(argc == 2)
+        prefix = argv[1];
+    else if(argc > 2)
+    {
+        std::cerr << "Command line argument not recognized";
+        return 0;
+    }
+    else
+        prefix = getexepath() + "/../data/";
+
+    // read the models
+    int status = read_all_models(prefix, 0.53);
+    if(status != 0)
+        return(status);
+
+    // print the header for the FASTA-formatted file
+	getline(std::cin, line);
+	std::cout << line;
+	std::cout << "\n";
+
+	// get the sequence
+    while (std::cin >> line)
+        query = query + line;
+
+    // calculate scores
+    std::vector<double> scores = predict_seq(query);
+
+    //print results
+    for(int i = 0; i < scores.size(); i++)
+        printf("%c\t%f\n", query[i], scores[i]);
+
+	return 0;
 }
