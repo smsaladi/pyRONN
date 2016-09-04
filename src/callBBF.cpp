@@ -9,11 +9,8 @@
 ** Contact:	varun@strubi.ox.ac.uk
 **
 ** Substantial modifications to speed up code as well as facilitate wrapping
-** with Python (or any other language). Can now also handle multiple
-** FASTA-formatted records in an input file. Path to `data` directory must be
-** specified as a command-line argument if not located at `../data` with respect
-** to the executable file.
-** Date:    Sept 2016
+** with Python (or any other language).
+** Date:    September 2016
 ** Author:  Shyam Saladi (California Institute of Technology)
 ** Contact: saladi@caltech.edu
 **
@@ -153,17 +150,13 @@ void align(std::vector<short> &seqAA, int i, int j, int rho[], RONNModel *model)
 int predict_model(std::string query, RONNModel *model,
 				  std::vector<double> &scores)
 {
-	int rho[2], seqlen = scores.size();
+	int i, r, j, rho[2], seqlen = scores.size();
 	double y, fOrder, fDisor, pDisor;
-
-	// initialize arrays
-	std::vector<int> predictTimes(seqlen, 0);
 	std::vector<short> seqAA(seqlen, 0);
-
-	std::map < std::map <int, int>, double > yBar;
+	std::vector<double> temp_scores(seqlen, 0);
 
 	//translate protein sequence to numbers
-	for(int i = 0; i < seqlen; i++)
+	for(i = 0; i < seqlen; i++)
 	{
 		seqAA[i] = INDEX[(int)(query[i]-'A')];
 		// check if valid character
@@ -174,10 +167,10 @@ int predict_model(std::string query, RONNModel *model,
 		}
 	}
 
-	for(int i = 0; i <= seqlen-model->nW; i++)
+	for(i = 0; i <= seqlen-model->nW; i++)
 	{
 		y = 0.0;
-		for(int j = 0; j < model->nD; j++)
+		for(j = 0; j < model->nD; j++)
 		{
 			// search for the maximum alignment between ith query peptide
 			// jth database sequence
@@ -187,32 +180,19 @@ int predict_model(std::string query, RONNModel *model,
 
 		fOrder = exp(-0.5*pow(y-model->mu[0], 2.0)/model->sigma[0])/(sqrt(M_2_PI*model->sigma[0])); //$VR$: bug fixed by Ron in Feb07
 		fDisor = exp(-0.5*pow(y-model->mu[1], 2.0)/model->sigma[1])/(sqrt(M_2_PI*model->sigma[1])); //$VR$: bug fixed by Ron in Feb07
-
 		pDisor = model->disorder_weight*fDisor/((1.0-model->disorder_weight)*fOrder+model->disorder_weight*fDisor);
 
-		for(int r = i; r < i+model->nW; r++)
-		{
-			std::map <int, int> r_predtimes;
-			r_predtimes[r] = predictTimes[r];
-
-			yBar[r_predtimes] = pDisor;
-			predictTimes[r]++;
-		}
+		for(r = i; r < i+model->nW; r++)
+			temp_scores[r] += pDisor;
 	}
 
-	for(int i = 0; i < seqlen; i++)
-	{
-		y = 0.0;
-		for(int r = 0; r < predictTimes[i]; r++)
-		{
-			std::map<int, int> tmp_vals;
-			tmp_vals[i] = r;
-			y += yBar[tmp_vals];
-		}
-
-		// add score to running total
-		scores[i] += (double)y/(double)predictTimes[i];
-	}
+	for(i = 0; i < seqlen; i++)
+		if(i < model->nW)			// adjustments for edge residues
+			scores[i] += temp_scores[i]/(double)(i+1);
+		else if(seqlen - i < model->nW)
+			scores[i] += temp_scores[i]/(double)(seqlen - i);
+		else
+			scores[i] += temp_scores[i]/(double)model->nW;
 
 	return 0;
 }
