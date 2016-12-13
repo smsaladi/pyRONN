@@ -4,7 +4,6 @@
 
 import re
 import ctypes
-import warnings
 from pkg_resources import resource_filename
 
 from numpy.ctypeslib import load_library, ndpointer
@@ -24,16 +23,18 @@ disorder_weight = 0.53
 
 def load_libRONN(weight=disorder_weight):
     global libRONN
-    libRONN = load_library("libRONN", resource_filename(__name__, '.'))
+    libRONN = load_library("libronn", resource_filename(__name__, '.'))
 
     # Read all data files for models
     libRONN.read_all_models.argtypes = [ctypes.c_char_p, ctypes.c_float]
     libRONN.read_all_models.restype = ctypes.c_int
-    libRONN.read_all_models(resource_filename(__name__, './data'), weight)
+    libRONN.read_all_models(resource_filename(__name__, './data').encode(),
+                            weight)
 
     # Initialize predict_seq method
-    libRONN.predict_seq.argtypes = [ctypes.c_char_p]
-    libRONN.predict_seq.restype = ndpointer(dtype=np.float)
+    libRONN.predict_seq.argtypes = [ctypes.c_char_p,
+                                    ndpointer(dtype=np.float),
+                                    ctypes.c_bool]
 
     return
 
@@ -76,10 +77,9 @@ def calc_ronn(seq):
     # # handle invalid characters
     # missing_pos = [match.span()[1]-1 for match in re_remove.finditer(seq)]
     # seq = re_remove.sub('', seq)
-
-
-    # http://stackoverflow.com/a/37888716/2320823
-    return libRONN.predict_seq(str.encode(seq))
+    scores = np.zeros(len(seq), dtype=np.float)
+    libRONN.predict_seq(seq.encode(), scores, False)
+    return scores
 
     # if missing_pos and handle_invalid:
     #     warnings.warn("%s...%s: Unknown residues. Interpolating." %

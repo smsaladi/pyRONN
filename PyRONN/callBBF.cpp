@@ -147,10 +147,9 @@ void align(std::vector<short> &seqAA, int i, int j, int rho[], RONNModel *model)
 }
 
 
-int predict_model(std::string query, RONNModel *model,
-				  std::vector<double> &scores)
+int predict_model(const char *query, RONNModel *model, double *scores)
 {
-	int i, r, j, rho[2], seqlen = scores.size();
+	int i, r, j, rho[2], seqlen = (int)strlen(query);
 	double y, fOrder, fDisor, pDisor;
 	std::vector<short> seqAA(seqlen, 0);
 	std::vector<double> temp_scores(seqlen, 0);

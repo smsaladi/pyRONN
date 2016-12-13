@@ -18,6 +18,13 @@
 **
 ==========================================================*/
 
+// make accessible from Python
+#ifdef _WIN32
+#define DLLEXPORT extern "C" __declspec(dllexport)
+#else
+#define DLLEXPORT extern "C"
+#endif
+
 // Number of models to use
 #define MODCNT 10
 
@@ -38,6 +45,7 @@ std::string getexepath()
   ssize_t count = readlink( "/proc/self/exe", result, PATH_MAX );
   return std::string( result, (count > 0) ? count : 0 );
 }
+
 
 int read_all_models(std::string prefix, float disorder_weight)
 /*****
@@ -78,19 +86,35 @@ int read_all_models(std::string prefix, float disorder_weight)
 }
 
 
-std::vector<double> predict_seq(std::string query, bool print_output)
-{
-    std::vector<double> scores(query.length(), 0.0);
-    for(int m = 0; m < MODCNT; m++)
+DLLEXPORT
+int read_all_models(const char *prefix, float disorder_weight) {
+    std::string p(prefix);
+    return read_all_models(p, disorder_weight);
+}
+
+DLLEXPORT
+int predict_seq(const char *query, double *scores, bool print_output) {
+    // scores is not cleared before calculation
+    // if not all 0.0, will be added to
+    for(int m = 0; m < MODCNT; m++) {
         predict_model(query, &models[m], scores);
+    }
 
-    for(int i = 0; i < query.length(); i++)
+    for(unsigned int i = 0; i < strlen(query); i++) {
+        scores[i] = scores[i]/(double)MODCNT;
         if(print_output)
-             printf("%c\t%f\n", query[i], scores[i]/(double)MODCNT);
-        else
-            scores[i] = scores[i]/(double)MODCNT;
+             printf("%c\t%f\n", query[i], scores[i]);
+    }
 
-    return scores;
+    return 0;
+}
+
+
+int predict_seq(std::string query, bool print_output) {
+    std::vector<double> s(query.length(), 0.0);
+    double* scores = &s[0];
+    predict_seq(query.c_str(), scores, print_output);
+    return 0;
 }
 
 
@@ -103,7 +127,7 @@ int main(int argc, char *argv[])
     else if(argc > 2)
     {
         std::cerr << "Command line argument not recognized";
-        return 0;
+        return 1;
     }
     else
         prefix = getexepath() + "/../data/";
@@ -117,7 +141,7 @@ int main(int argc, char *argv[])
     while(std::getline(std::cin, line).good()){
         if(line[0] == '>')
         {
-            if(query.length() > 1)          // OK if not the first sequence
+            if(query.length() > 1)             // OK if not the first sequence
                 predict_seq(query, 1);      // predict and print scores
             std::cout << line << std::endl; // print header
             query = "";

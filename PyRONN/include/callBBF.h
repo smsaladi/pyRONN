@@ -25,13 +25,12 @@ void read_pdf_record(std::string filename, RONNModel *model);
 void align(std::vector<short> &seqAA, int i, int j, int rho[],
            RONNModel *model);
 
-int predict_model(std::string query, RONNModel *model,
-				  std::vector<double> &scores);
+int predict_model(const char *query, RONNModel *model, double *scores);
 
 RONNModel read_model_data(std::string mod_fn, std::string pdf_fn,
 						  double d_weight);
 
-//               A b C D E F G H I j K L M  N  o P  Q  R  S  T  u V  W  x Y
+//                     A b C D E F G H I j K L M  N  o P  Q  R  S  T  u V  W  x Y
 int	const INDEX[25] = {0,0,1,2,3,4,5,6,7,0,8,9,10,11,0,12,13,14,15,16,0,17,18,0,19};
 
 int	const Dayhoff[20][20] = {
