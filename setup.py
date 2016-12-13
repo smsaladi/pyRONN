@@ -1,15 +1,4 @@
-from distutils.core import setup, Extension, Command
-
-class PyTest(Command):
-    user_options = []
-    def initialize_options(self):
-        pass
-    def finalize_options(self):
-        pass
-    def run(self):
-        #import here, outside the eggs aren't loaded
-        import pytest
-        pytest.main()
+from distutils.core import setup, Extension
 
 setup(
   name='PyRONN',
@@ -25,5 +14,9 @@ setup(
   ext_modules=[Extension('pyronn.libronn',
                          sources=['pyronn/libRONN.cpp',
                                   'pyronn/callBBF.cpp'])],
-  cmdclass = {'test': PyTest}
+  package_data={'pyronn': ['data/c*/model.rec', 'data/c*/pdfs.rec']},
+  zip_safe=True,
+  include_package_data=True,
+  setup_requires=['pytest-runner'],
+  tests_require=['pytest', 'pandas']
 )
