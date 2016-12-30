@@ -15,6 +15,7 @@ setup(
                          sources=['ronn/libRONN.cpp',
                                   'ronn/callBBF.cpp'])],
   package_data={'ronn': ['data/c*/model.rec', 'data/c*/pdfs.rec']},
+  entry_points={'console_scripts': ['RONN=ronn.ronn:main']},
   zip_safe=True,
   include_package_data=True,
   setup_requires=['pytest-runner'],

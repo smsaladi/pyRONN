@@ -9,6 +9,13 @@ from pkg_resources import resource_filename
 from numpy.ctypeslib import load_library, ndpointer
 import numpy as np
 
+# for main function
+import sys
+import argparse
+
+import Bio.SeqIO
+
+
 libRONN = None
 """C library that does the heavy-lifting (loaded upon 1st use)
 """
@@ -114,3 +121,43 @@ def calc_ronn(seq):
     #                      'coils': coils,
     #                      'rem465': rem465,
     #                      'hotloops': hotloops})
+
+
+def main():
+    # set up and parse arguments
+    class MyFormatter(argparse.ArgumentDefaultsHelpFormatter,
+                      argparse.MetavarTypeHelpFormatter):
+        pass
+    parser = argparse.ArgumentParser(
+        description='Calculate RONN disorder prediction.',
+        formatter_class=MyFormatter)
+
+    parser.add_argument('inputfile',
+                        type=str,
+                        default=sys.stdin,
+                        help='File of protein coding sequences to predict on.')
+
+    parser.add_argument('--inputformat',
+                        type=str,
+                        default='fasta',
+                        help='File format of [inputfile]. '
+                             'Any Bio.SeqIO-readable supported')
+
+    args = parser.parse_args()
+
+    if(args.inputfile == '-'):
+        args.inputfile = sys.stdin
+
+    # print numpy entire array one by entry at a time
+    np.set_string_function(lambda x: "\n".join(map(str, x.tolist())), False)
+    np.set_printoptions(threshold=np.nan)
+
+    for record in Bio.SeqIO.parse(args.inputfile, args.inputformat):
+        record.seq = record.seq.upper()
+        print(">" + record.id, calc_ronn(str(record.seq)), sep='\n')
+
+    return
+
+if __name__ == '__main__':
+    main()
+
