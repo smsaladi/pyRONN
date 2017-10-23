@@ -20,14 +20,12 @@ matrix:
 
 install:
   - source devtools/travis-ci-installcfg.sh
-  - pip install coveralls
-  - pip install .
+  - pip install codecov pytest-cov
+  - pip install -e .
 
 script:
-  - coverage run --source=ronn py.test -v --color=yes --exitfirst --showlocals
-
-after_success:
-  - coveralls
+  - py.test -v --color=yes --exitfirst --showlocals --cov=ronn/ test/
+  - codecov
 
 deploy:
   provider: pypi
