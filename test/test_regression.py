@@ -59,7 +59,7 @@ def raw_score_compare(old_output_fn, records_fn):
 
 
 def test_ecolik12():
-    raw_score_compare("test/Daley_gfp.ronn32", "test/Daley_gfp.fna.faa")
+    raw_score_compare("test/Daley_gfp.short.ronn32", "test/Daley_gfp.short.fna.faa")
     return
 
 
