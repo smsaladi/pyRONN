@@ -150,7 +150,7 @@ def main():
 
     # print numpy entire array one by entry at a time
     np.set_string_function(lambda x: "\n".join(map(str, x.tolist())), False)
-    np.set_printoptions(threshold=np.nan)
+    np.set_printoptions(threshold=sys.maxsize)
 
     for record in Bio.SeqIO.parse(args.inputfile, args.inputformat):
         record.seq = record.seq.upper()
